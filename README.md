@@ -6,6 +6,10 @@ Two takes on the same idea, both driven by the Windows System Media Transport
 Controls, so they follow Spotify, a YouTube tab, or anything else that publishes
 a media session.
 
+![The strip in the taskbar](docs/taskbar-strip.png)
+
+![The player popover](docs/popover.png)
+
 ## `windhawk/` — the taskbar mod
 
 A [Windhawk](https://windhawk.net/) mod that adds the strip as a real child of

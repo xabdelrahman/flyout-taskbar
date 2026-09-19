@@ -5,3 +5,6 @@
 
 # Local settings written at runtime
 *.log
+
+# Local release staging (not checked in)
+release/
