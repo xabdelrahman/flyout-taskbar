@@ -1,0 +1,7 @@
+# Build output
+[Bb]in/
+[Oo]bj/
+*.user
+
+# Local settings written at runtime
+*.log

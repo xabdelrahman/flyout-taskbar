@@ -1,0 +1,210 @@
+<UserControl
+    x:Class="FluentMusic.Views.PlayerView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:FluentMusic.Controls"
+    mc:Ignorable="d"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006">
+
+    <UserControl.Resources>
+        <controls:BoolToVisibilityConverter x:Key="BoolToVisibility" />
+    </UserControl.Resources>
+
+    <!-- Frosted Minimal: the window backdrop blurs what is behind, the scrim anchors the
+         surface to the theme, and the sheen and rim give it the edge of a pane of glass. -->
+    <Border
+        CornerRadius="8"
+        BorderThickness="1"
+        BorderBrush="{ThemeResource GlassRimBrush}"
+        Background="{ThemeResource GlassScrimBrush}">
+
+        <Grid CornerRadius="8">
+            <Border Background="{ThemeResource GlassSheenBrush}" />
+
+            <Grid Padding="20,16,20,22">
+
+                <!-- Nothing playing -->
+                <StackPanel
+                    VerticalAlignment="Center"
+                    HorizontalAlignment="Center"
+                    Spacing="10"
+                    Visibility="{x:Bind ViewModel.IsEmpty, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
+                    <FontIcon
+                        FontFamily="{ThemeResource SymbolThemeFontFamily}"
+                        Glyph="&#xE8D6;"
+                        FontSize="28"
+                        Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                    <TextBlock
+                        HorizontalAlignment="Center"
+                        Style="{StaticResource BodyStrongTextBlockStyle}"
+                        FontSize="14"
+                        Text="Nothing playing" />
+                    <TextBlock
+                        HorizontalAlignment="Center"
+                        TextAlignment="Center"
+                        TextWrapping="Wrap"
+                        MaxWidth="210"
+                        FontSize="12"
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        Text="Start playing music or video to control it here." />
+                </StackPanel>
+
+                <!-- Now playing -->
+                <Grid
+                    RowSpacing="14"
+                    Visibility="{x:Bind ViewModel.HasSession, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <!-- Source app -->
+                    <TextBlock
+                        Grid.Row="0"
+                        HorizontalAlignment="Center"
+                        FontSize="11"
+                        Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                        TextTrimming="CharacterEllipsis"
+                        Text="{x:Bind ViewModel.SourceApp, Mode=OneWay}" />
+
+                    <!-- Artwork -->
+                    <Grid Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center">
+                        <Border
+                            x:Name="ArtworkCard"
+                            Width="164"
+                            Height="164"
+                            CornerRadius="10"
+                            BorderThickness="1"
+                            BorderBrush="{ThemeResource GlassArtworkBorderBrush}"
+                            Background="{ThemeResource GlassArtworkFillBrush}">
+                            <Border.Shadow>
+                                <ThemeShadow />
+                            </Border.Shadow>
+                            <Border.RenderTransform>
+                                <ScaleTransform x:Name="ArtworkScale" CenterX="82" CenterY="82" />
+                            </Border.RenderTransform>
+
+                            <Grid>
+                                <!-- Fallback while artwork is missing or still loading. -->
+                                <FontIcon
+                                    FontFamily="{ThemeResource SymbolThemeFontFamily}"
+                                    Glyph="&#xE8D6;"
+                                    FontSize="38"
+                                    Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                    Visibility="{x:Bind ViewModel.NoArtwork, Mode=OneWay, Converter={StaticResource BoolToVisibility}}" />
+
+                                <Border
+                                    CornerRadius="10"
+                                    Visibility="{x:Bind ViewModel.HasArtwork, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
+                                    <Border.Background>
+                                        <ImageBrush
+                                            ImageSource="{x:Bind ViewModel.Artwork, Mode=OneWay}"
+                                            Stretch="UniformToFill" />
+                                    </Border.Background>
+                                </Border>
+                            </Grid>
+                        </Border>
+                    </Grid>
+
+                    <!-- Track -->
+                    <StackPanel Grid.Row="2" Spacing="2">
+                        <TextBlock
+                            HorizontalAlignment="Center"
+                            TextAlignment="Center"
+                            Style="{StaticResource TrackTitleTextStyle}"
+                            Text="{x:Bind ViewModel.Title, Mode=OneWay}"
+                            ToolTipService.ToolTip="{x:Bind ViewModel.Title, Mode=OneWay}" />
+                        <TextBlock
+                            HorizontalAlignment="Center"
+                            TextAlignment="Center"
+                            Style="{StaticResource ArtistTextStyle}"
+                            Text="{x:Bind ViewModel.Artist, Mode=OneWay}" />
+                    </StackPanel>
+
+                    <!-- Progress -->
+                    <Grid
+                        Grid.Row="3"
+                        ColumnSpacing="9"
+                        Visibility="{x:Bind ViewModel.HasTimeline, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock
+                            Grid.Column="0"
+                            VerticalAlignment="Center"
+                            Style="{StaticResource TimestampTextStyle}"
+                            Text="{x:Bind ViewModel.PositionText, Mode=OneWay}" />
+
+                        <Slider
+                            x:Name="ProgressSlider"
+                            Grid.Column="1"
+                            VerticalAlignment="Center"
+                            Style="{StaticResource SeekBarStyle}"
+                            Minimum="0"
+                            Maximum="{x:Bind ViewModel.DurationSeconds, Mode=OneWay}"
+                            Value="{x:Bind ViewModel.PositionSeconds, Mode=OneWay}"
+                            IsEnabled="{x:Bind ViewModel.CanSeek, Mode=OneWay}"
+                            AutomationProperties.Name="Playback position" />
+
+                        <TextBlock
+                            Grid.Column="2"
+                            VerticalAlignment="Center"
+                            Style="{StaticResource TimestampTextStyle}"
+                            Text="{x:Bind ViewModel.DurationText, Mode=OneWay}" />
+                    </Grid>
+
+                    <!-- Transport -->
+                    <StackPanel
+                        Grid.Row="4"
+                        Orientation="Horizontal"
+                        HorizontalAlignment="Center"
+                        Spacing="14">
+
+                        <Button
+                            x:Name="PreviousButton"
+                            PointerEntered="OnButtonPointerEntered"
+                            PointerExited="OnButtonPointerExited"
+                            Style="{StaticResource GlassButtonStyle}"
+                            Command="{x:Bind ViewModel.PreviousCommand}"
+                            ToolTipService.ToolTip="Previous"
+                            AutomationProperties.Name="Previous track">
+                            <FontIcon FontFamily="{ThemeResource SymbolThemeFontFamily}" Glyph="&#xE892;" FontSize="13" />
+                        </Button>
+
+                        <Button
+                            x:Name="PlayPauseButton"
+                            PointerEntered="OnButtonPointerEntered"
+                            PointerExited="OnButtonPointerExited"
+                            Style="{StaticResource PrimaryGlassButtonStyle}"
+                            Command="{x:Bind ViewModel.PlayPauseCommand}"
+                            ToolTipService.ToolTip="{x:Bind ViewModel.PlayPauseTooltip, Mode=OneWay}"
+                            AutomationProperties.Name="{x:Bind ViewModel.PlayPauseTooltip, Mode=OneWay}">
+                            <FontIcon
+                                FontFamily="{ThemeResource SymbolThemeFontFamily}"
+                                Glyph="{x:Bind ViewModel.PlayPauseGlyph, Mode=OneWay}"
+                                FontSize="16" />
+                        </Button>
+
+                        <Button
+                            x:Name="NextButton"
+                            PointerEntered="OnButtonPointerEntered"
+                            PointerExited="OnButtonPointerExited"
+                            Style="{StaticResource GlassButtonStyle}"
+                            Command="{x:Bind ViewModel.NextCommand}"
+                            ToolTipService.ToolTip="Next"
+                            AutomationProperties.Name="Next track">
+                            <FontIcon FontFamily="{ThemeResource SymbolThemeFontFamily}" Glyph="&#xE893;" FontSize="13" />
+                        </Button>
+                    </StackPanel>
+                </Grid>
+            </Grid>
+        </Grid>
+    </Border>
+</UserControl>
