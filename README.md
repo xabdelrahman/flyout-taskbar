@@ -19,32 +19,41 @@ over it. Windows 11 removed deskbands and offers no supported API for putting
 content in the taskbar, so a [Windhawk](https://windhawk.net/) mod is the only
 way to be genuinely *inside* it.
 
-## How this compares to the other media mods
+## Should you use this one?
 
-Windhawk's catalog already has **Taskbar Fluent Media Player**, **Island Media
-Controls** and **Taskbar Music Lounge**, and the first two also inject into the
-taskbar's XAML tree. So "really inside the taskbar" is not the differentiator.
+Probably not — and you should know that before installing.
 
-The difference is scope. This mod is deliberately small: one hooked symbol, one
-fixed layout, four settings. Taskbar Fluent Media Player is the full-featured
-option — 20+ placements, auto-hide, theme-aware materials — and if you want
-those, use it instead. Pick this one if you want a minimal strip with a
-cross-fade between tracks and a decorative playing indicator, and nothing else
-to configure.
+Windhawk's catalog already has
+[Taskbar Fluent Media Player](https://windhawk.net/mods/taskbar-fluent-media-player),
+**Island Media Controls** and **Taskbar Music Lounge**. The first two also inject
+into the taskbar's XAML tree, so "really inside the taskbar" is not a
+differentiator. Taskbar Fluent Media Player is ~10,000 lines to this mod's
+~1,700, with 20+ placements, auto-hide, theme-aware materials and a genuine
+audio visualizer (WASAPI loopback and an FFT) rather than the decorative
+animation here.
+
+This mod was [submitted to the catalog](https://github.com/ramensoftware/windhawk-mods/pull/5580)
+and declined as too close to what already exists, which was a fair call. It
+lives on here because it works and because the code may be useful to read —
+not because it is the better choice.
+
+**Use Taskbar Fluent Media Player instead** unless you specifically want this
+one's minimal fixed layout and its cross-fade between tracks.
 
 ## Install
 
+Since it is not in the catalog, it installs by hand:
+
 1. Install [Windhawk](https://windhawk.net/) — a normal Windows installer, once.
-2. Open Windhawk and go to **Explore**.
-3. Search for **Fluent Music in the taskbar** and press **Install**.
+2. Open Windhawk and choose **Create a new mod**.
+3. Select all in the editor and paste
+   [`windhawk/fluent-music-taskbar.wh.cpp`](windhawk/fluent-music-taskbar.wh.cpp)
+   over the template.
+4. Press **Compile**.
 
-Windhawk compiles the mod locally and keeps it updated. Uninstalling is one
-click and leaves the taskbar exactly as it was.
-
-Until the mod is listed, install it by hand instead: in Windhawk choose
-*Create a new mod*, paste
-[`windhawk/fluent-music-taskbar.wh.cpp`](windhawk/fluent-music-taskbar.wh.cpp)
-over the template, and press **Compile**.
+Windhawk compiles it locally and loads it into Explorer. There are no automatic
+updates on this path — to update, paste a newer copy over it and compile again.
+Disabling or removing the mod puts the taskbar back exactly as it was.
 
 ## Settings
 
