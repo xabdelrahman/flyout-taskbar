@@ -502,6 +502,12 @@ WinMedia::GlobalSystemMediaTransportControlsSession CurrentSession() {
     return g_session;
 }
 
+/// What an artwork tile shows when there is no cover to draw.
+Media::Brush ArtPlaceholderBrush() {
+    return Media::SolidColorBrush{
+        winrt::Windows::UI::ColorHelper::FromArgb(0x24, 0xFF, 0xFF, 0xFF)};
+}
+
 /// Decodes artwork no larger than the tile it goes into. Without this a 640x640
 /// cover is decoded at full size into every layer, on the UI thread.
 Media::ImageBrush MakeArtBrush(WinStreams::IRandomAccessStream stream, double size) {
@@ -544,11 +550,19 @@ void WriteLayer(BarState& state, FrameworkElement bar, NowPlaying const& track,
     art.Visibility(g_settings.showArtwork ? Visibility::Visible
                                           : Visibility::Collapsed);
 
+    auto& layerArtKey = useB ? state.artKeyB : state.artKeyA;
+
     if (!g_settings.showArtwork || !track.artStream) {
+        // Nothing to draw for this track. Clear the layer rather than just
+        // returning: the two layers alternate, so leaving the old brush in place
+        // would show the cover from two tracks ago as if it were this one's.
+        if (!layerArtKey.empty()) {
+            art.Background(ArtPlaceholderBrush());
+            layerArtKey.clear();
+        }
         return;
     }
 
-    auto& layerArtKey = useB ? state.artKeyB : state.artKeyA;
     if (layerArtKey == track.key) {
         return;
     }
@@ -1034,15 +1048,12 @@ void ShowPlayerFlyout(FrameworkElement anchor) {
     root.Spacing(10);
     root.Padding(Thickness{});
 
-    auto placeholder = Media::SolidColorBrush{
-        winrt::Windows::UI::ColorHelper::FromArgb(0x24, 0xFF, 0xFF, 0xFF)};
-
     Controls::Border art;
     art.Width(kFlyoutArtSize);
     art.Height(kFlyoutArtSize);
     art.CornerRadius(CornerRadius{5, 5, 5, 5});
     art.VerticalAlignment(VerticalAlignment::Center);
-    art.Background(placeholder);
+    art.Background(ArtPlaceholderBrush());
     if (g_artStream) {
         try {
             art.Background(MakeArtBrush(g_artStream, kFlyoutArtSize));
@@ -1294,8 +1305,7 @@ void EnsureBar(FrameworkElement taskbarFrameElement) {
         layer.Name(second ? kArtB : kArtA);
         layer.CornerRadius(CornerRadius{4, 4, 4, 4});
         layer.Opacity(second ? 0.0 : 1.0);
-        layer.Background(Media::SolidColorBrush{
-            winrt::Windows::UI::ColorHelper::FromArgb(0x24, 0xFF, 0xFF, 0xFF)});
+        layer.Background(ArtPlaceholderBrush());
         artHost.Children().Append(layer);
     }
 
