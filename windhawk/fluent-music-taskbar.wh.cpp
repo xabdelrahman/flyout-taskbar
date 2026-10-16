@@ -188,10 +188,10 @@ struct BarState {
     /// The strip's click handler, kept so it can be detached on unload.
     winrt::Windows::Foundation::IInspectable tapHandler{nullptr};
 
-    // Which track's cover each layer currently holds, so a cover that arrives
-    // after the title still gets written, and nothing is decoded twice.
-    std::wstring artKeyA;
-    std::wstring artKeyB;
+    // Which cover each layer currently holds, by content hash, so a cover that
+    // arrives after the title still gets written and nothing is decoded twice.
+    uint64_t artHashA = 0;
+    uint64_t artHashB = 0;
 
     /// The track the transition last ran for, so it plays once per song rather
     /// than on every playback update.
@@ -480,6 +480,9 @@ struct NowPlaying {
     std::wstring key;
     bool playing = false;
     bool hasSession = false;
+
+    /// Identifies the cover by its bytes. See HashStream.
+    uint64_t artHash = 0;
     bool shuffle = false;
     bool repeatOn = false;
     WinStreams::IRandomAccessStream artStream{nullptr};
@@ -550,26 +553,26 @@ void WriteLayer(BarState& state, FrameworkElement bar, NowPlaying const& track,
     art.Visibility(g_settings.showArtwork ? Visibility::Visible
                                           : Visibility::Collapsed);
 
-    auto& layerArtKey = useB ? state.artKeyB : state.artKeyA;
+    auto& layerArtHash = useB ? state.artHashB : state.artHashA;
 
-    if (!g_settings.showArtwork || !track.artStream) {
+    if (!g_settings.showArtwork || !track.artStream || track.artHash == 0) {
         // Nothing to draw for this track. Clear the layer rather than just
         // returning: the two layers alternate, so leaving the old brush in place
         // would show the cover from two tracks ago as if it were this one's.
-        if (!layerArtKey.empty()) {
+        if (layerArtHash != 0) {
             art.Background(ArtPlaceholderBrush());
-            layerArtKey.clear();
+            layerArtHash = 0;
         }
         return;
     }
 
-    if (layerArtKey == track.key) {
+    if (layerArtHash == track.artHash) {
         return;
     }
 
     try {
         art.Background(MakeArtBrush(track.artStream, kArtSize));
-        layerArtKey = track.key;
+        layerArtHash = track.artHash;
     } catch (const winrt::hresult_error& e) {
         Wh_Log(L"Artwork decode failed: %08X", e.code().value);
     }
@@ -762,8 +765,40 @@ HANDLE g_stopEvent;
 // Worker thread only. The UI thread's g_lastState cannot be read from here -
 // that would be the same unsynchronized cross-thread access flagged elsewhere -
 // so the worker keeps its own record of what it last fetched.
-[[clang::no_destroy]] std::wstring g_workerLastKey;
+uint64_t g_workerLastArtHash;
 [[clang::no_destroy]] WinStreams::IRandomAccessStream g_workerLastArt{nullptr};
+
+/// FNV-1a over the thumbnail bytes. The artwork is identified by its content
+/// rather than by the track, because the image for a track can change while the
+/// track does not - and two different tracks can share a cover.
+uint64_t HashStream(WinStreams::IRandomAccessStream const& stream) {
+    try {
+        auto size = static_cast<uint32_t>(stream.Size());
+        if (size == 0) {
+            return 0;
+        }
+
+        WinStreams::DataReader reader{stream.GetInputStreamAt(0)};
+        if (reader.LoadAsync(size).get() != size) {
+            return 0;
+        }
+
+        std::vector<uint8_t> bytes(size);
+        reader.ReadBytes(bytes);
+
+        uint64_t hash = 1469598103934665603ull;
+        for (uint8_t byte : bytes) {
+            hash ^= byte;
+            hash *= 1099511628211ull;
+        }
+
+        // 0 means "no artwork", so never return it for real bytes.
+        return hash ? hash : 1;
+    } catch (const winrt::hresult_error& e) {
+        Wh_Log(L"Hashing the artwork failed: %08X", e.code().value);
+        return 0;
+    }
+}
 
 void RequestRefresh() {
     if (g_refreshEvent) {
@@ -814,13 +849,12 @@ NowPlaying ReadNowPlaying() {
         track.key = track.title + L"|" + track.artist + L"|" +
                     std::wstring{properties.AlbumTitle().c_str()};
 
-        // Re-opening and copying the cover on every playback update is wasted
-        // work; only the track changing can change the artwork.
-        if (track.key == g_workerLastKey && g_workerLastArt) {
-            track.artStream = g_workerLastArt;
-            return track;
-        }
-
+        // The cover must be re-read even when the track has not changed. A
+        // browser publishes the track's metadata as soon as the page sets it but
+        // the image a moment later, so the first thumbnail of a track is often a
+        // stand-in - Chrome serves its own icon - which is then replaced. Keying
+        // this on the track would freeze that stand-in in place for the whole
+        // song, which is exactly what it did.
         if (auto thumbnail = properties.Thumbnail()) {
             auto source = thumbnail.OpenReadAsync().get();
 
@@ -829,14 +863,23 @@ NowPlaying ReadNowPlaying() {
             WinStreams::InMemoryRandomAccessStream copy;
             WinStreams::RandomAccessStream::CopyAsync(source, copy).get();
             copy.Seek(0);
-            track.artStream = copy;
+
+            track.artHash = HashStream(copy);
+            copy.Seek(0);
+
+            // Reuse the previous stream object when the bytes are identical, so
+            // an unchanged cover does not look like a new one downstream.
+            track.artStream = (track.artHash != 0 && track.artHash == g_workerLastArtHash &&
+                               g_workerLastArt)
+                                  ? g_workerLastArt
+                                  : copy;
         }
 
-        g_workerLastKey = track.key;
+        g_workerLastArtHash = track.artHash;
         g_workerLastArt = track.artStream;
     } catch (const winrt::hresult_error&) {
         // The media app went away mid-read; show the empty state instead.
-        g_workerLastKey.clear();
+        g_workerLastArtHash = 0;
         g_workerLastArt = nullptr;
         return NowPlaying{};
     }
