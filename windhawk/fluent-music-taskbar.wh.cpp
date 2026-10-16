@@ -15,7 +15,7 @@
 /*
 # Fluent Music in the taskbar
 
-Puts the currently playing track inside the taskbar itself — a real child of the
+Puts the currently playing track inside the taskbar itself - a real child of the
 taskbar's own XAML tree, not a window floating over it.
 
 ![The strip in the taskbar](https://raw.githubusercontent.com/xabdelrahman/flyout-taskbar/main/docs/taskbar-strip.png)
@@ -1145,7 +1145,7 @@ void ShowPlayerFlyout(FrameworkElement anchor) {
         transport.Spacing(1);
         transport.VerticalAlignment(VerticalAlignment::Center);
 
-        auto shuffle = MakeTransportButton(L"", 24);
+        auto shuffle = MakeTransportButton(L"\uE8B1", 24);
         if (track.shuffle) {
             shuffle.Background(ThemeBrush(
                 {L"AccentFillColorDefaultBrush"},
@@ -1158,7 +1158,7 @@ void ShowPlayerFlyout(FrameworkElement anchor) {
         });
         transport.Children().Append(shuffle);
 
-        auto previous = MakeTransportButton(L"", 24);
+        auto previous = MakeTransportButton(L"\uE892", 24);
         TrackedLeftTap(previous, []() {
             if (auto session = CurrentSession()) {
                 session.TrySkipPreviousAsync();
@@ -1167,7 +1167,7 @@ void ShowPlayerFlyout(FrameworkElement anchor) {
         transport.Children().Append(previous);
 
         auto playPause =
-            MakeTransportButton(track.playing ? L"" : L"", 28);
+            MakeTransportButton(track.playing ? L"\uE769" : L"\uE768", 28);
         TrackedLeftTap(playPause, []() {
             if (auto session = CurrentSession()) {
                 session.TryTogglePlayPauseAsync();
@@ -1175,7 +1175,7 @@ void ShowPlayerFlyout(FrameworkElement anchor) {
         });
         transport.Children().Append(playPause);
 
-        auto next = MakeTransportButton(L"", 24);
+        auto next = MakeTransportButton(L"\uE893", 24);
         TrackedLeftTap(next, []() {
             if (auto session = CurrentSession()) {
                 session.TrySkipNextAsync();
@@ -1183,7 +1183,7 @@ void ShowPlayerFlyout(FrameworkElement anchor) {
         });
         transport.Children().Append(next);
 
-        auto repeat = MakeTransportButton(L"", 24);
+        auto repeat = MakeTransportButton(L"\uE8EE", 24);
         if (track.repeatOn) {
             repeat.Background(ThemeBrush(
                 {L"AccentFillColorDefaultBrush"},
